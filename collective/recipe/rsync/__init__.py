@@ -2,7 +2,7 @@
 """Recipe rsync"""
 
 import logging
-import sys
+
 import subprocess
 from pkg_resources import working_set
 from sys import executable
@@ -12,12 +12,13 @@ _LOG = logging.getLogger("rsync")
 line = ('-----------------------------------' +
         '-----------------------------------')
 
+
 def rsync(source=None, target=None, port=None):
     if port:
-        cmd = ['rsync', '-e', 'ssh -p %s' % port, '-av', '--partial',
-            '--progress', source, target]
+        cmd = ['rsync', '-e', 'ssh -p %s' % port, '-av', '--partial', '--inplace', '--compress-level=9',
+               '--progress', source, target]
     else:
-        cmd = ['rsync', '-av', '--partial', '--progress', source, target]
+        cmd = ['rsync', '-av', '--partial', '--progress', '--inplace', '--compress-level=9', source, target]
     _LOG.info(line)
     _LOG.info('Running rsync with command: ')
     _LOG.info('  $ %s' % ' '.join(cmd))
@@ -42,16 +43,14 @@ class Recipe(object):
             if options['script'] == 'true':
                 self.script = True
 
-
     def install(self):
         """Installer"""
         if self.script:
             bindir = self.buildout['buildout']['bin-directory']
             arguments = "source='%s', target='%s', port='%s'"
             create_script(
-                [('%s' % self.name, 'collective.recipe.rsync.__init__', 'rsync')],
-                working_set, executable, bindir, arguments=arguments % (
-                self.source, self.target, self.port))
+                [('rsync-%s' % self.name, 'collective.recipe.rsync.__init__', 'rsync')],
+                working_set, executable, bindir, arguments=arguments % (self.source, self.target, self.port))
             return tuple((bindir + '/' + 'rsync',))
         else:
             # if we make it this far, script option is not set so we execute
